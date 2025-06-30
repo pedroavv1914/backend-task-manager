@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String    @map("name")
+  email     String    @unique @map("email")
+  password  String    @map("password")
+  role      UserRole  @default(MEMBER)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  teams     TeamMember[]
+  taskHistoryChanges TaskHistory[] @relation("TaskHistoryChangedBy")
+  tasks     Task[]     @relation("TaskAssignee")
+  
+  @@map("users")
+}
+
+model Team {
+  id          Int           @id @default(autoincrement())
+  name        String        @map("name")
+  description String?       @map("description")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  members     TeamMember[]
+  tasks       Task[]
+  
+  @@map("teams")
+}
+
+model TeamMember {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  teamId    Int      @map("team_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, teamId])
+  @@map("team_members")
+}
+
+model Task {
+  id          Int          @id @default(autoincrement())
+  title       String       @map("title")
+  description String?      @map("description")
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  assignedTo  Int          @map("assigned_to")
+  teamId      Int          @map("team_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  
+  // Relations
+  assignee    User         @relation("TaskAssignee", fields: [assignedTo], references: [id])
+  team        Team         @relation(fields: [teamId], references: [id])
+  history     TaskHistory[]
+  
+  @@map("tasks")
+}
+
+model TaskHistory {
+  id            Int        @id @default(autoincrement())
+  taskId        Int        @map("task_id")
+  changedBy     Int        @map("changed_by")
+  oldStatus     TaskStatus @map("old_status")
+  newStatus     TaskStatus @map("new_status")
+  changedAt     DateTime   @default(now()) @map("changed_at")
+  
+  // Relations
+  task          Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedByUser User       @relation(fields: [changedBy], references: [id], onDelete: Cascade, name: "TaskHistoryChangedBy")
+  
+  @@map("task_history")
+}

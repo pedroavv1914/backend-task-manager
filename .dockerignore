@@ -1,0 +1,29 @@
+# Dependências
+node_modules
+
+# Build
+dist
+
+# Logs
+logs
+*.log
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Testes
+coverage
+
+# Editor
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Outros
+.DS_Store
+*.md
