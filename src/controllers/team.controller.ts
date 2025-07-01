@@ -105,7 +105,7 @@ export const createTeam = async (req: Request, res: Response): Promise<Response>
       }
 
       // Busca o time com os membros para retornar
-      return await prisma.team.findUnique({
+      const teamWithMembers = await prisma.team.findUnique({
         where: { id: team.id },
         include: {
           members: {
@@ -125,6 +125,15 @@ export const createTeam = async (req: Request, res: Response): Promise<Response>
           },
         },
       });
+
+      console.log('Time criado com membros:', {
+        teamId: team.id,
+        memberCount: teamWithMembers?._count?.members,
+        members: teamWithMembers?.members,
+        allCounts: teamWithMembers?._count
+      });
+
+      return teamWithMembers;
     });
 
     return res.status(201).json({
@@ -163,11 +172,34 @@ export const getTeams = async (_req: Request, res: Response): Promise<Response> 
   try {
     const teams = await prisma.team.findMany({
       include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+        },
         _count: {
           select: { members: true, tasks: true },
         },
       },
+      orderBy: {
+        name: 'asc',
+      },
     });
+
+    console.log('Times encontrados:', teams.map(team => ({
+      id: team.id,
+      name: team.name,
+      memberCount: team._count?.members,
+      membersCount: team.members?.length,
+      hasMembers: !!team.members?.length
+    })));
 
     return res.status(200).json({
       status: 'success',
