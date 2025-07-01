@@ -60,23 +60,88 @@ export const getTeamMembers = async (req: Request, res: Response): Promise<Respo
 // Cria um novo time
 export const createTeam = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { name, description } = req.body;
+    const { name, description, memberIds } = req.body;
 
-    const team = await prisma.team.create({
-      data: {
-        name,
-        description,
-      },
+    // Validação dos dados de entrada
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'O nome do time é obrigatório',
+      });
+    }
+
+    // Inicia uma transação para garantir a integridade dos dados
+    const result = await prisma.$transaction(async (prisma) => {
+      // Cria o time
+      const team = await prisma.team.create({
+        data: {
+          name,
+          description: description || null,
+        },
+      });
+
+      // Adiciona os membros ao time, se fornecidos
+      if (Array.isArray(memberIds) && memberIds.length > 0) {
+        // Remove duplicatas e converte para número
+        const uniqueMemberIds = [...new Set(memberIds)].map(id => Number(id));
+        
+        // Cria as associações dos membros com o time
+        await prisma.teamMember.createMany({
+          data: uniqueMemberIds.map(userId => ({
+            teamId: team.id,
+            userId,
+          })),
+          skipDuplicates: true, // Ignora se já existir
+        });
+      }
+
+      // Busca o time com os membros para retornar
+      return await prisma.team.findUnique({
+        where: { id: team.id },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: { members: true, tasks: true },
+          },
+        },
+      });
     });
 
     return res.status(201).json({
       status: 'success',
       data: {
-        team,
+        team: result,
       },
     });
   } catch (error: any) {
     console.error('Erro ao criar time:', error);
+    
+    // Tratamento de erros específicos do Prisma
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Já existe um time com este nome',
+      });
+    }
+    
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Um ou mais usuários não foram encontrados',
+      });
+    }
+    
     return res.status(500).json({
       status: 'error',
       message: 'Erro ao criar time',
