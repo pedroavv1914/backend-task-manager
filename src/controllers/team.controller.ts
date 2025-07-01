@@ -283,20 +283,96 @@ export const getTeam = async (req: Request, res: Response): Promise<Response> =>
 export const updateTeam = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, memberIds } = req.body;
 
-    const team = await prisma.team.update({
-      where: { id: Number(id) },
-      data: {
-        name,
-        description,
-      },
+    // Validação dos dados de entrada
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'O nome do time é obrigatório',
+      });
+    }
+
+    // Inicia uma transação para garantir a integridade dos dados
+    const result = await prisma.$transaction(async (prisma) => {
+      // Atualiza os dados básicos do time
+      const team = await prisma.team.update({
+        where: { id: Number(id) },
+        data: {
+          name: name.trim(),
+          description: description?.trim() || null,
+        },
+      });
+
+      // Se memberIds for fornecido, atualiza os membros do time
+      if (Array.isArray(memberIds)) {
+        // Remove duplicatas e converte para número
+        const uniqueMemberIds = [...new Set(memberIds)].map(id => Number(id));
+        
+        // Remove membros que não estão mais na lista
+        await prisma.teamMember.deleteMany({
+          where: {
+            teamId: team.id,
+            userId: { notIn: uniqueMemberIds },
+          },
+        });
+
+        // Adiciona novos membros que ainda não estão no time
+        for (const userId of uniqueMemberIds) {
+          try {
+            // Verifica se o membro já existe no time
+            const existingMember = await prisma.teamMember.findFirst({
+              where: {
+                teamId: team.id,
+                userId: userId,
+              },
+            });
+
+            if (!existingMember) {
+              // Se não existir, cria uma nova associação
+              await prisma.teamMember.create({
+                data: {
+                  teamId: team.id,
+                  userId: userId,
+                },
+              });
+            }
+          } catch (error: any) {
+            // Ignora erros de duplicação (código P2002)
+            if (error?.code !== 'P2002') {
+              throw error;
+            }
+          }
+        }
+      }
+
+      // Busca o time atualizado com os membros para retornar
+      return await prisma.team.findUnique({
+        where: { id: team.id },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: { members: true, tasks: true },
+          },
+        },
+      });
     });
 
     return res.status(200).json({
       status: 'success',
       data: {
-        team,
+        team: result,
       },
     });
   } catch (error: any) {
