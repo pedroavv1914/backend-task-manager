@@ -86,13 +86,22 @@ export const createTeam = async (req: Request, res: Response): Promise<Response>
         const uniqueMemberIds = [...new Set(memberIds)].map(id => Number(id));
         
         // Cria as associações dos membros com o time
-        await prisma.teamMember.createMany({
-          data: uniqueMemberIds.map(userId => ({
-            teamId: team.id,
-            userId,
-          })),
-          skipDuplicates: true, // Ignora se já existir
-        });
+        // Usando createMany com skipDuplicates falso e tratando erros individualmente
+        for (const userId of uniqueMemberIds) {
+          try {
+            await prisma.teamMember.create({
+              data: {
+                teamId: team.id,
+                userId: userId
+              }
+            });
+          } catch (error: any) {
+            // Ignora erros de duplicação (código P2002)
+            if (error?.code !== 'P2002') {
+              throw error;
+            }
+          }
+        }
       }
 
       // Busca o time com os membros para retornar
