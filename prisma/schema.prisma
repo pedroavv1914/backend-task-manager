@@ -56,7 +56,6 @@ model Task {
   teamId      Int           @map("team_id")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
-  deadline    DateTime?     @map("deadline")
   history     TaskHistory[]
   team        Team          @relation(fields: [teamId], references: [id])
   assignee    User          @relation("TaskAssignee", fields: [assignedTo], references: [id])

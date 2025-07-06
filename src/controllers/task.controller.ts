@@ -437,8 +437,8 @@ export const updateTask = async (req: Request, res: Response): Promise<Response>
         status,
         priority,
         assignedTo,
-        teamId, // Adicionado para permitir a atualização do time
-        deadline, // Data limite para a tarefa
+        teamId, 
+        deadline, 
       },
       include: {
         assignee: {
