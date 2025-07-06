@@ -100,9 +100,9 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(404).json({ status: 'error', message: 'Usuário não encontrado' });
     }
     const { password, ...userWithoutPassword } = user;
-    res.status(200).json({ status: 'success', user: userWithoutPassword });
+    return res.status(200).json({ status: 'success', user: userWithoutPassword });
   } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Erro ao buscar usuário autenticado' });
+    return res.status(500).json({ status: 'error', message: 'Erro ao buscar usuário autenticado' });
   }
 };
 
