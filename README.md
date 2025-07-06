@@ -1,19 +1,5 @@
 # 🗂️ STRATIX - Task Manager API
 
-<p align="center">
-  <img src="https://img.shields.io/github/workflow/status/pedroavv1914/api-gerenciador-de-tarefas/CI" alt="Build Status" />
-  <img src="https://img.shields.io/codecov/c/github/pedroavv1914/api-gerenciador-de-tarefas" alt="Coverage" />
-  <img src="https://img.shields.io/github/license/pedroavv1914/api-gerenciador-de-tarefas" alt="License" />
-  <img src="https://img.shields.io/github/package-json/v/pedroavv1914/api-gerenciador-de-tarefas" alt="Version" />
-</p>
-
-🔗 A robust, secure, and efficient RESTful API for managing tasks, built with Node.js, Express, TypeScript, and Prisma ORM. Designed to work seamlessly with the Task Manager Frontend.
-
----
-
-![Architecture Diagram](https://user-images.githubusercontent.com/your-username/diagram-stratix-api.png)
-<sub>*Client ↔️ API ↔️ Database — Secure JWT authentication, modular services, scalable design*</sub>
-
 ---
 
 ## 📋 Table of Contents
